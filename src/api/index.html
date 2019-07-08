@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Watch Dog</title>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script
+      src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+      integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+      integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+      crossorigin="anonymous"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+      integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+      integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
+    <style>
+      @-webkit-keyframes new-row {
+        from {
+          background-color: yellow;
+        }
+
+        to {
+          background-color: inherit;
+        }
+      }
+
+      @-moz-keyframes new-row {
+        from {
+          background-color: yellow;
+        }
+
+        to {
+          background-color: inherit;
+        }
+      }
+
+      @-o-keyframes new-row {
+        from {
+          background-color: yellow;
+        }
+
+        to {
+          background-color: inherit;
+        }
+      }
+
+      @keyframes new-row {
+        from {
+          background-color: yellow;
+        }
+
+        to {
+          background-color: inherit;
+        }
+      }
+
+      .new-row {
+        -webkit-animation: new-row 1s;
+        /* Safari 4+ */
+        -moz-animation: new-row 1s;
+        /* Fx 5+ */
+        -o-animation: new-row 1s;
+        /* Opera 12+ */
+        animation: new-row 1s;
+        /* IE 10+ */
+
+        animation-iteration-count: 1;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <!-- Content here -->
+      <div class="alert alert-danger">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="p-2 "><h4>Watch Dog</h4></div>
+          <div class="p-2">
+            <h5><span id="time"></span></h5>
+          </div>
+        </div>
+      </div>
+
+      <table id="predictions" class="table table-striped">
+        <thead>
+          <tr>
+            <th>Camera</th>
+            <th>Detected</th>
+            <th>Identified On</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <script>
+      setInterval(() => {
+        $("#time").text(
+          `DateTime: ${moment().format("LL")} ${moment().format("LTS")}`
+        );
+      }, 1000);
+
+      moment.lang("en", {
+        longDateFormat: {
+          LT: "h:mm:ss A", // <----------- add :ss
+          L: "MM/DD/YYYY",
+          l: "M/D/YYYY",
+          LL: "MMMM Do YYYY",
+          ll: "MMM D YYYY",
+          LLL: "MMMM Do YYYY LT",
+          lll: "MMM D YYYY LT",
+          LLLL: "dddd, MMMM Do YYYY LT",
+          llll: "ddd, MMM D YYYY LT"
+        }
+      });
+
+      const socket = io("http://192.168.1.78:3000");
+
+      var items = [];
+      const addToTable = row => {
+        console.log(row);
+        $(`<tr>
+                    <td class="new-row"><a href="/img?camera=${
+                      row.camera
+                    }&date=${row.results.date}" target="_blank">${
+          row.camera
+        }</a></td>
+                    <td class="new-row">${row.results.predictions
+                      .map(p => `${p.class} ${Math.round(p.score * 100)}%`)
+                      .join()}</td>
+                    <td class="new-row">${moment(
+                      row.results.date
+                    ).calendar()}</td>
+            </tr>`).prependTo("#predictions > tbody");
+      };
+
+      const trimTable = () => {};
+
+      socket.on("connect", () => {
+        console.log("connected");
+        socket.on("display predictions", response => {
+          if (
+            !items.find(
+              item =>
+                item.camera === response.camera &&
+                item.results.date === response.results.date
+            )
+          ) {
+            items.push({
+              index: items.length,
+              response
+            });
+            addToTable(response);
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
