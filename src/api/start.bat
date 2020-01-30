@@ -1,1 +1,0 @@
-pm2 start "C:\detector\api\index.js" --name "detector-api"
