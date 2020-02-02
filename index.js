@@ -4,14 +4,14 @@ const { log } = require("console"),
   shortid = require("shortid"),
   moment = require("moment"),
   timeout = 2000,
-  camera = process.argv[2],
-  {
-    DETECTOR_URL,
-    CCTV_URL,
-    CAPTURE_LIMIT = 25,
-    GQL_URL,
-    GQL_SECRET
-  } = process.env;
+  camera = process.argv[2];
+const {
+  DETECTOR_URL,
+  CCTV_URL,
+  CAPTURE_LIMIT = 10,
+  GQL_URL,
+  GQL_SECRET
+} = process.env;
 
 +(async function() {
   const group = shortid.generate();
@@ -36,8 +36,8 @@ const { log } = require("console"),
           save({ camera, group, sequence: SAVE_COUNT, base64Image, persons });
           SAVE_COUNT += 1;
         }
-      } catch (error) {
-        log(error);
+      } catch ({ message, stack }) {
+        log({ message, stack });
       } finally {
         CAPTURE_COUNT += 1;
         nextRun = moment().add(1, "second");
