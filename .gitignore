@@ -1,3 +1,10 @@
-.env
+.vs
+src/object-detection
 node_modules
-*.bat
+*.db
+**/obj
+**/Properties
+.postgres
+**/bin
+**/logs
+*.env

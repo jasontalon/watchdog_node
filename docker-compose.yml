@@ -1,0 +1,33 @@
+version: "3"
+services:
+  database:
+    image: postgres:12-alpine
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./.postgres/db_data:/var/lib/postgresql/data
+      - ./.postgres/backups:/backups
+    environment: 
+      POSTGRES_PASSWORD: p@55w0rd!
+  object-detection:
+    build: 
+      context: ./src/object-detection
+      dockerfile: ./docker/dockerfile
+    restart: unless-stopped
+    volumes:
+      - ./src/object-detection/models:/models
+      - ./src/object-detection/models_hash:/models_hash
+    ports:
+      - "7987:7770"
+  graphql-engine:
+    image: hasura/graphql-engine:v1.3.3.cli-migrations-v2
+    ports:
+    - "7988:8080"
+    depends_on:
+    - "database"
+    restart: unless-stopped
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:p%4055w0rd!@database:5432/postgres
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true" # set to "false" to disable console      
+      HASURA_GRAPHQL_ADMIN_SECRET: p@55w0rd!
