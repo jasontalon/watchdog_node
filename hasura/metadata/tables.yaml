@@ -1,1 +1,56 @@
-[]
+- table:
+    schema: public
+    name: bounding_boxes
+  object_relationships:
+  - name: capture
+    using:
+      foreign_key_constraint_on: image_name
+- table:
+    schema: public
+    name: cameras
+  array_relationships:
+  - name: captures
+    using:
+      foreign_key_constraint_on:
+        column: camera_id
+        table:
+          schema: public
+          name: captures
+  - name: targets
+    using:
+      foreign_key_constraint_on:
+        column: camera_id
+        table:
+          schema: public
+          name: targets
+- table:
+    schema: public
+    name: capture_latest_view
+- table:
+    schema: public
+    name: capture_trail_view
+- table:
+    schema: public
+    name: captures
+  object_relationships:
+  - name: camera
+    using:
+      foreign_key_constraint_on: camera_id
+  array_relationships:
+  - name: bounding_boxes
+    using:
+      foreign_key_constraint_on:
+        column: image_name
+        table:
+          schema: public
+          name: bounding_boxes
+- table:
+    schema: public
+    name: configs
+- table:
+    schema: public
+    name: targets
+  object_relationships:
+  - name: camera
+    using:
+      foreign_key_constraint_on: camera_id
