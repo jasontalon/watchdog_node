@@ -1,38 +1,38 @@
-using GraphQL.Client.Http;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Watchdog.Detector;
-using Watchdog.Models;
-using GraphQL.Client.Abstractions;
-using GraphQL;
-using System.Linq;
+using System.Net.Http;
 
 namespace Watchdog
 {
 	public class DetectorWorker : BackgroundService
 	{
 		private readonly int refreshRate;
-		private const int TWO_SECONDS = 2000;
-		private readonly IConfiguration config;
+		private const int TWO_SECONDS = 2000;		
 		private readonly ILogger<DetectorWorker> logger;
 		private readonly DetectorService detectorService;
-		private readonly IServiceScopeFactory scopeFactory;
-		private readonly GraphQLHttpClient graphQLHttpClient;
 
-		public DetectorWorker(IConfiguration config, ILogger<DetectorWorker> logger, DetectorService detectorService, IServiceScopeFactory scopeFactory, GraphQLHttpClient graphQLHttpClient)
-		{
-			this.config = config;
+		public DetectorWorker(IConfiguration config, ILogger<DetectorWorker> logger, DetectorService detectorService)
+		{			
 			this.logger = logger;
-			this.detectorService = detectorService;
-			this.scopeFactory = scopeFactory;
-			this.graphQLHttpClient = graphQLHttpClient;
+			this.detectorService = detectorService;			
 			refreshRate = config.GetValue<int>("RefreshRate") * 1000; //convert seconds to milliseconds.
+		}
+
+		private async Task<bool> IsGraphQLConnectionAlive()
+		{
+			try {
+				await detectorService.LoadTargetPath();
+				return true;
+			}
+			catch(HttpRequestException ex){
+				logger.LogError(ex.Message);
+				return false;
+			}
 		}
 
 		protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -44,7 +44,13 @@ namespace Watchdog
 
 				var shouldQuit = false;
 				var targetPath = string.Empty;
-				var objectDetectionUri = string.Empty;				
+				var objectDetectionUri = string.Empty;
+
+				while (!(await IsGraphQLConnectionAlive()))
+				{
+					//wait until it comes alive.
+					await Task.Delay(refreshRate);
+				}
 
 				while (string.IsNullOrEmpty(detectorService.TargetPath))
 				{
@@ -53,7 +59,7 @@ namespace Watchdog
 					if (!string.IsNullOrEmpty(detectorService.TargetPath)) break;
 
 					logger.LogError("Detection will not start because Target Path is not configured. Retrying...");
-					Task.Delay(refreshRate).GetAwaiter().GetResult();
+					await Task.Delay(refreshRate);
 				}
 
 				while (detectorService.ObjectDetectionUri is null)
@@ -63,7 +69,7 @@ namespace Watchdog
 
 					if (detectorService.ObjectDetectionUri is not null) break;
 					logger.LogError("Detection will not start because Object Detection Uri not configured. Retrying...");
-					Task.Delay(refreshRate).GetAwaiter().GetResult();
+					await Task.Delay(refreshRate);
 				}
 
 				new Timer(callback: async _ => await detectorService.LoadCameras(), state: null, dueTime: 0, period: refreshRate);
@@ -83,7 +89,6 @@ namespace Watchdog
 						detectorService.Quit();
 						shouldQuit = true;
 					}
-
 				}, state: null, dueTime: 0, period: TWO_SECONDS);
 
 				detectorService.Run();
@@ -93,8 +98,7 @@ namespace Watchdog
 			catch (Exception ex)
 			{
 				logger.LogError(ex.ToString());
-			}
-			
+			}			
 		}
 
 	}

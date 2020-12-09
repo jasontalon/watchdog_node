@@ -91,23 +91,20 @@ namespace Watchdog.Detector
 			logger.LogInformation(string.Format("[{0}ms] {1} {2}",
 				watch.ElapsedMilliseconds,
 				e.Name,
-				items.Count > 0 ? $"{items.Count} found. [{string.Join(",", items)}]" : "[n/a]"));			
+				items.Count > 0 ? $"{items.Count} found. [{string.Join(",", items)}]" : "[n/a]"));
 		}
 
 		private async Task saveToDb(string cameraId, string file, List<BoundingBox> items)
 		{
 			try
-			{
-				var fileName = Path.GetFileName(file);
-				var base64Image = Convert.ToBase64String(File.ReadAllBytes(file));
-				
+			{				
 				var payload = new InsertCapturePayload
 				{
 					Capture = new Models.GraphQL.Capture
 					{
 						CameraId = cameraId,
-						ImageName = fileName,
-						ImageBase64 = base64Image,
+						ImageName = Path.GetFileName(file),
+						ImageBase64 = Convert.ToBase64String(File.ReadAllBytes(file)),
 						BoundingBoxes =  new BoundingBoxes
 						{
 							Data = items.Select((p, idx) => new Datum{
@@ -124,7 +121,6 @@ namespace Watchdog.Detector
 				var errors = string.Join(", ", response.Errors?.Select(p => p.Message) ?? new List<string>());
 
 				if (!string.IsNullOrEmpty(errors)) logger.LogError(errors);
-
 			}
 			catch (Exception ex)
 			{
