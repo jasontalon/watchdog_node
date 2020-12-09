@@ -4,7 +4,7 @@ services:
     image: postgres:12-alpine
     restart: always
     ports:
-      - "5432:5432"
+      - "33432:5432"
     volumes:
       - ./.postgres/db_data:/var/lib/postgresql/data
       - ./.postgres/backups:/backups
@@ -19,11 +19,11 @@ services:
       - ./src/object-detection/models:/models
       - ./src/object-detection/models_hash:/models_hash
     ports:
-      - "7987:7770"
+      - "33430:7770"
   graphql-engine:
     image: hasura/graphql-engine:v1.3.3.cli-migrations-v2
     ports:
-    - "7988:8080"
+    - "33433:8080"
     depends_on:
     - "database"
     restart: unless-stopped

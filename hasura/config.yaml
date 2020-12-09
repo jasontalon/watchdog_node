@@ -1,0 +1,7 @@
+version: 2
+endpoint: http://localhost:33433
+metadata_directory: metadata
+admin_secret: p@55w0rd!
+actions:
+  kind: synchronous
+  handler_webhook_baseurl: http://localhost:33433
